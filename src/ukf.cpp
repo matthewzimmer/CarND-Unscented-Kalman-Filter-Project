@@ -3,6 +3,8 @@
 #include "Eigen/Dense"
 #include <iostream>
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "IncompatibleTypes"
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -60,7 +62,7 @@ UKF::~UKF() {}
  * @param {MeasurementPackage} meas_package The latest measurement data of
  * either radar or laser.
  */
-void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+void UKF::ProcessMeasurement(MeasurementPackage &meas_package) {
   /**
   TODO:
 
@@ -87,6 +89,14 @@ void UKF::Prediction(double delta_t) {
  * Updates the state and the state covariance matrix using a laser measurement.
  * @param {MeasurementPackage} meas_package
  */
+//void UKF::Update(LaserMeasurement &meas_package) {
+//  std::cout << "Update LASER" << std::endl;
+//}
+
+//void UKF::Update(RadarMeasurement &meas_package) {
+//  std::cout << "Update RADAR" << std::endl;
+//}
+
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
   /**
   TODO:
@@ -112,3 +122,5 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   You'll also need to calculate the radar NIS.
   */
 }
+
+#pragma clang diagnostic pop

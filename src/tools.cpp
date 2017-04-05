@@ -1,6 +1,8 @@
 #include <iostream>
 #include "tools.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "TemplateArgumentsIssues"
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
@@ -16,3 +18,5 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
     * Calculate the RMSE here.
   */
 }
+
+#pragma clang diagnostic pop

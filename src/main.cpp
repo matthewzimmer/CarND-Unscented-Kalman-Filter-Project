@@ -7,8 +7,11 @@
 #include "Eigen/Dense"
 #include "ukf.h"
 #include "ground_truth_package.h"
-#include "measurement_package.h"
+#include "LaserMeasurement.h"
+#include "RadarMeasurement.h"
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "IncompatibleTypes"
 using namespace std;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -66,7 +69,7 @@ int main(int argc, char* argv[]) {
    *  Set Measurements                          *
    **********************************************/
 
-  vector<MeasurementPackage> measurement_pack_list;
+  vector<shared_ptr<MeasurementPackage>> measurement_pack_list;
   vector<GroundTruthPackage> gt_pack_list;
 
   string line;
@@ -74,59 +77,61 @@ int main(int argc, char* argv[]) {
   // prep the measurement packages (each line represents a measurement at a
   // timestamp)
   while (getline(in_file_, line)) {
+
     string sensor_type;
-    MeasurementPackage meas_package;
     GroundTruthPackage gt_package;
     istringstream iss(line);
     long long timestamp;
 
     // reads first element from the current line
     iss >> sensor_type;
-
     if (sensor_type.compare("L") == 0) {
-      // laser measurement
+      // LASER MEASUREMENT
+      LaserMeasurement meas_package;
 
       // read measurements at this timestamp
       meas_package.sensor_type_ = MeasurementPackage::LASER;
-      meas_package.raw_measurements_ = VectorXd(2);
-      float px;
-      float py;
-      iss >> px;
-      iss >> py;
-      meas_package.raw_measurements_ << px, py;
+      meas_package.raw_measurements_ = Eigen::VectorXd(2);
+      double x;
+      double y;
+      iss >> x;
+      iss >> y;
+      meas_package.raw_measurements_ << x, y;
       iss >> timestamp;
       meas_package.timestamp_ = timestamp;
-      measurement_pack_list.push_back(meas_package);
+      measurement_pack_list.push_back(make_shared<LaserMeasurement>(meas_package));
+
     } else if (sensor_type.compare("R") == 0) {
-      // radar measurement
+      // RADAR MEASUREMENT
+      RadarMeasurement meas_package;
 
       // read measurements at this timestamp
       meas_package.sensor_type_ = MeasurementPackage::RADAR;
-      meas_package.raw_measurements_ = VectorXd(3);
-      float ro;
-      float phi;
-      float ro_dot;
+      meas_package.raw_measurements_ = Eigen::VectorXd(3);
+      double ro;
+      double phi;
+      double ro_dot;
       iss >> ro;
       iss >> phi;
       iss >> ro_dot;
       meas_package.raw_measurements_ << ro, phi, ro_dot;
       iss >> timestamp;
       meas_package.timestamp_ = timestamp;
-      measurement_pack_list.push_back(meas_package);
+      measurement_pack_list.push_back(make_shared<RadarMeasurement>(meas_package));
     }
 
-      // read ground truth data to compare later
-      float x_gt;
-      float y_gt;
-      float vx_gt;
-      float vy_gt;
-      iss >> x_gt;
-      iss >> y_gt;
-      iss >> vx_gt;
-      iss >> vy_gt;
-      gt_package.gt_values_ = VectorXd(4);
-      gt_package.gt_values_ << x_gt, y_gt, vx_gt, vy_gt;
-      gt_pack_list.push_back(gt_package);
+    // read ground truth data to compare later
+    double x_gt;
+    double y_gt;
+    double vx_gt;
+    double vy_gt;
+    iss >> x_gt;
+    iss >> y_gt;
+    iss >> vx_gt;
+    iss >> vy_gt;
+    gt_package.gt_values_ = Eigen::VectorXd(4);
+    gt_package.gt_values_ << x_gt, y_gt, vx_gt, vy_gt;
+    gt_pack_list.push_back(gt_package);
   }
 
   // Create a UKF instance
@@ -157,8 +162,10 @@ int main(int argc, char* argv[]) {
 
 
   for (size_t k = 0; k < number_of_measurements; ++k) {
+    shared_ptr<MeasurementPackage> mp = measurement_pack_list[k];
+
     // Call the UKF-based fusion
-    ukf.ProcessMeasurement(measurement_pack_list[k]);
+    ukf.ProcessMeasurement(*mp);
 
     // output the estimation
     out_file_ << ukf.x_(0) << "\t"; // pos1 - est
@@ -168,18 +175,18 @@ int main(int argc, char* argv[]) {
     out_file_ << ukf.x_(4) << "\t"; // yaw_rate -est
 
     // output the measurements
-    if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
+    if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
       // output the estimation
 
       // p1 - meas
-      out_file_ << measurement_pack_list[k].raw_measurements_(0) << "\t";
+      out_file_ << (*mp).raw_measurements_(0) << "\t";
 
       // p2 - meas
-      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t";
-    } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
+      out_file_ << (*mp).raw_measurements_(1) << "\t";
+    } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
       // output the estimation in the cartesian coordinates
-      float ro = measurement_pack_list[k].raw_measurements_(0);
-      float phi = measurement_pack_list[k].raw_measurements_(1);
+      float ro = (*mp).raw_measurements_(0);
+      float phi = (*mp).raw_measurements_(1);
       out_file_ << ro * cos(phi) << "\t"; // p1_meas
       out_file_ << ro * sin(phi) << "\t"; // p2_meas
     }
@@ -192,9 +199,9 @@ int main(int argc, char* argv[]) {
 
     // output the NIS values
     
-    if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
+    if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
       out_file_ << ukf.NIS_laser_ << "\n";
-    } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
+    } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
       out_file_ << ukf.NIS_radar_ << "\n";
     }
 
@@ -230,3 +237,5 @@ int main(int argc, char* argv[]) {
   cout << "Done!" << endl;
   return 0;
 }
+
+#pragma clang diagnostic pop

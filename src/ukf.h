@@ -11,6 +11,7 @@
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+class MeasurementPackage;
 class UKF {
 public:
 
@@ -88,7 +89,7 @@ public:
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser
    */
-  void ProcessMeasurement(MeasurementPackage meas_package);
+  void ProcessMeasurement(MeasurementPackage &meas_package);
 
   /**
    * Prediction Predicts sigma points, the state, and the state covariance
@@ -96,6 +97,23 @@ public:
    * @param delta_t Time between k and k+1 in s
    */
   void Prediction(double delta_t);
+
+
+  /**
+   * Updates the state and the state covariance matrix using a laser measurement
+   * @param meas_package The measurement at k+1
+   */
+//  void Update(LaserMeasurement &meas_package) {
+//
+//  }
+
+  /**
+   * Updates the state and the state covariance matrix using a radar measurement
+   * @param meas_package The measurement at k+1
+   */
+//  void Update(RadarMeasurement &meas_package) {
+//
+//  }
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement
