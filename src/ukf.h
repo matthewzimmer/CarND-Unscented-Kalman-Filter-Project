@@ -7,11 +7,13 @@
 #include <string>
 #include <fstream>
 #include "tools.h"
+#include "RadarMeasurement.h"
+#include "LaserMeasurement.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-class MeasurementPackage;
+class MeasurementPackage; // forward declaration to avoid circular dependency compiler errors
 class UKF {
 public:
 
@@ -103,17 +105,17 @@ public:
    * Updates the state and the state covariance matrix using a laser measurement
    * @param meas_package The measurement at k+1
    */
-//  void Update(LaserMeasurement &meas_package) {
-//
-//  }
+  void Update(LaserMeasurement &meas_package) {
+
+  }
 
   /**
    * Updates the state and the state covariance matrix using a radar measurement
    * @param meas_package The measurement at k+1
    */
-//  void Update(RadarMeasurement &meas_package) {
-//
-//  }
+  void Update(RadarMeasurement &meas_package) {
+
+  }
 
   /**
    * Updates the state and the state covariance matrix using a laser measurement

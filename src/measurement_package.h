@@ -4,7 +4,7 @@
 #include "Eigen/Dense"
 #include "ukf.h"
 
-class UKF;
+class UKF; // forward declaration to avoid circular dependency compiler errors
 class MeasurementPackage {
 public:
     long long timestamp_;
