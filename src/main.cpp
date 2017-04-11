@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
         // output the estimation
 
         // p1 - meas
-        out_file_ << (*mp).raw_measurements_(0) << "\t";
+        out_file_ << (*mp).raw_measurements_(0)  << "\t";
 
         // p2 - meas
         out_file_ << (*mp).raw_measurements_(1) << "\t";

@@ -32,7 +32,7 @@ UKF::UKF() {
   std_a_ = 0.1;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 1.0;
+  std_yawdd_ = 1.0; //M_PI/3; //1.0;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -137,15 +137,15 @@ bool UKF::ProcessMeasurement(MeasurementPackage &measurement_pack) {
       // cartesian because we always want x_ in cartesian coordinates.
       double rho = z(0);
       double phi = z(1);
-      x_ << rho * cos(phi), rho * sin(phi), 1.0, 0, 0;
+      x_ << rho * cos(phi), rho * sin(phi), 0, 0, 0;
     } else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
-      x_ << p_x, p_y, 1.0, 0, 0;
+      x_ << p_x, p_y, 0, 0, 0;
     }
 
     // The first measurement is reliable so use the
     // identity matrix as the initial covariance matrix
-//    P_ << MatrixXd::Identity(n_x_, n_x_);
-    P_ = x_ * x_.transpose();
+    P_ << MatrixXd::Identity(n_x_, n_x_);
+//    P_ = x_ * x_.transpose();
     cout << "P = " << endl << P_ << endl;
 
     time_us_ = measurement_pack.timestamp_;
@@ -319,7 +319,7 @@ void UKF::PredictMeanAndCovariance() {
     /**
      * When calculating the predicted state covariance matrix,
      * in the equation we always need the difference between
-     * the mean predicted state and a sigma points. The problem
+     * the mean predicted state and a sigma point. The problem
      * here is that the state contains an angle. As you have
      * learned before, subtracting angles is a problem for Kalman
      * filters, because the result might be 2π plus a small angle,
@@ -336,17 +336,10 @@ void UKF::PredictMeanAndCovariance() {
      *
      * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      */
-    while (x_diff(3) > M_PI) x_diff(3) -= 2. * M_PI;
-    while (x_diff(3) < -M_PI) x_diff(3) += 2. * M_PI;
+    x_diff(3) = atan2(sin(x_diff(3)),cos(x_diff(3)));
 
     P_ = P_ + weights_(i) * x_diff * x_diff.transpose();
   }
-
-  //print result
-//  std::cout << "Predicted state" << std::endl;
-//  std::cout << x_ << std::endl;
-//  std::cout << "Predicted covariance matrix" << std::endl;
-//  std::cout << P_ << std::endl;
 }
 
 void UKF::PredictRadarMeasurement() {
@@ -389,8 +382,7 @@ void UKF::PredictRadarMeasurement() {
     z_diff = Zsig_.col(i) - z_pred_;
 
     //angle normalization
-    while (z_diff(1) > M_PI) z_diff(1) -= 2. * M_PI;
-    while (z_diff(1) < -M_PI) z_diff(1) += 2. * M_PI;
+    z_diff(1) = atan2(sin(z_diff(1)),cos(z_diff(1)));
 
     S_ += weights_(i) * z_diff * z_diff.transpose();
   }
@@ -445,8 +437,8 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   VectorXd z = VectorXd(n_z_);
   z <<
     measurement_pack.raw_measurements_[0],   //rho in m
-    measurement_pack.raw_measurements_[1],   //phi in rad
-    measurement_pack.raw_measurements_[2];   //rho_dot in m/s
+          measurement_pack.raw_measurements_[1],   //phi in rad
+          measurement_pack.raw_measurements_[2];   //rho_dot in m/s
 
   //create matrix for cross correlation Tc
   MatrixXd Tc = MatrixXd(n_x_, n_z_);
@@ -455,20 +447,20 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
   MatrixXd K = MatrixXd(n_x_, n_z_);
 
   //calculate cross correlation matrix
-  size_t N = 2*n_aug_+1;
+  size_t N = 2 * n_aug_ + 1;
   Tc.fill(0.0);
-  for(int i = 0; i < N; i++) {
+  for (int i = 0; i < N; i++) {
     //residual
     VectorXd z_diff = Zsig_.col(i) - z_pred_;
+
     //angle normalization
-    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+    z_diff(1) = atan2(sin(z_diff(1)), cos(z_diff(1)));
+
 
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_;
     //angle normalization
-    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+    x_diff(3) = atan2(sin(x_diff(3)), cos(x_diff(3)));
 
     Tc += weights_(i) * (x_diff * z_diff.transpose());
   }
@@ -478,8 +470,8 @@ void UKF::UpdateRadar(MeasurementPackage measurement_pack) {
 
   VectorXd z_diff = z - z_pred_;
 
-  while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
-  while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+  //angle normalization
+  z_diff(1) = atan2(sin(z_diff(1)), cos(z_diff(1)));
 
   //update state mean and covariance matrix
   x_ = x_ + K * z_diff;
