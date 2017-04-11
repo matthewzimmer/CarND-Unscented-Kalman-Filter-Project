@@ -19,9 +19,12 @@ LaserMeasurement::LaserMeasurement() {
           0, 0.0225;
 }
 
+void LaserMeasurement::ProcessMeasurement(UKF &ukf) {
+
+}
+
 void LaserMeasurement::Update(UKF &ukf) {
-//  ukf.Update(this);
-//  ukf.UpdateLidar((*this));
+  ukf.UpdateLidar(*this);
 }
 
 #pragma clang diagnostic pop

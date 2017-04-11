@@ -9,6 +9,8 @@
 #include "measurement_package.h"
 #include "tools.h"
 
+// forward declaration to avoid circular dependency compiler errors
+class UKF;
 class RadarMeasurement : public MeasurementPackage {
 public:
     RadarMeasurement();
@@ -16,6 +18,7 @@ public:
     virtual ~RadarMeasurement() {};
 
     void Update(UKF &ukf);
+    void ProcessMeasurement(UKF &ukf);
 
 private:
     Tools tools;

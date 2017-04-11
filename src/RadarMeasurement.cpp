@@ -17,9 +17,13 @@ RadarMeasurement::RadarMeasurement() {
           0, 0, 0.09;
 }
 
+void RadarMeasurement::ProcessMeasurement(UKF &ukf) {
+
+}
+
 void RadarMeasurement::Update(UKF &ukf) {
-//  ukf.Update(this);
-//  ukf.UpdateRadar((*this));
+//  ukf.Update(*this);
+  ukf.UpdateRadar(*this);
 }
 
 #pragma clang diagnostic pop

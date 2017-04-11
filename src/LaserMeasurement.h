@@ -8,6 +8,7 @@
 
 #include "measurement_package.h"
 
+class UKF; // forward declaration to avoid circular dependency compiler errors
 class LaserMeasurement : public MeasurementPackage {
 public:
     LaserMeasurement();
@@ -15,6 +16,7 @@ public:
     virtual ~LaserMeasurement() {};
 
     void Update(UKF &ukf);
+    void ProcessMeasurement(UKF &ukf);
 
 private:
     Eigen::MatrixXd R_;

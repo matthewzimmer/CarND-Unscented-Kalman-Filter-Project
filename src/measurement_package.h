@@ -19,6 +19,7 @@ public:
     virtual ~MeasurementPackage() = default;
 
     virtual void Update(UKF &ukf) = 0;
+    virtual void ProcessMeasurement(UKF &ukf) = 0;
 };
 
 #endif /* MEASUREMENT_PACKAGE_H_ */

@@ -17,7 +17,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
-void check_arguments(int argc, char* argv[]) {
+void check_arguments(int argc, char *argv[]) {
   string usage_instructions = "Usage instructions: ";
   usage_instructions += argv[0];
   usage_instructions += " path/to/input.txt output.txt";
@@ -40,8 +40,8 @@ void check_arguments(int argc, char* argv[]) {
   }
 }
 
-void check_files(ifstream& in_file, string& in_name,
-                 ofstream& out_file, string& out_name) {
+void check_files(ifstream &in_file, string &in_name,
+                 ofstream &out_file, string &out_name) {
   if (!in_file.is_open()) {
     cerr << "Cannot open input file: " << in_name << endl;
     exit(EXIT_FAILURE);
@@ -53,7 +53,7 @@ void check_files(ifstream& in_file, string& in_name,
   }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 
   check_arguments(argc, argv);
 
@@ -160,65 +160,65 @@ int main(int argc, char* argv[]) {
   out_file_ << "vy_true" << "\t";
   out_file_ << "NIS" << "\n";
 
-
+  bool measurement_processed;
   for (size_t k = 0; k < number_of_measurements; ++k) {
     shared_ptr<MeasurementPackage> mp = measurement_pack_list[k];
 
     // Call the UKF-based fusion
-    ukf.ProcessMeasurement(*mp);
-
-    // output the estimation
-    out_file_ << ukf.x_(0) << "\t"; // pos1 - est
-    out_file_ << ukf.x_(1) << "\t"; // pos2 - est
-    out_file_ << ukf.x_(2) << "\t"; // vel_abs -est
-    out_file_ << ukf.x_(3) << "\t"; // yaw_angle -est
-    out_file_ << ukf.x_(4) << "\t"; // yaw_rate -est
-
-    // output the measurements
-    if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
+    measurement_processed = ukf.ProcessMeasurement(*mp);
+    if (measurement_processed) {
       // output the estimation
+      out_file_ << ukf.x_(0) << "\t"; // pos1 - est
+      out_file_ << ukf.x_(1) << "\t"; // pos2 - est
+      out_file_ << ukf.x_(2) << "\t"; // vel_abs -est
+      out_file_ << ukf.x_(3) << "\t"; // yaw_angle -est
+      out_file_ << ukf.x_(4) << "\t"; // yaw_rate -est
 
-      // p1 - meas
-      out_file_ << (*mp).raw_measurements_(0) << "\t";
+      // output the measurements
+      if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
+        // output the estimation
 
-      // p2 - meas
-      out_file_ << (*mp).raw_measurements_(1) << "\t";
-    } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
-      // output the estimation in the cartesian coordinates
-      float ro = (*mp).raw_measurements_(0);
-      float phi = (*mp).raw_measurements_(1);
-      out_file_ << ro * cos(phi) << "\t"; // p1_meas
-      out_file_ << ro * sin(phi) << "\t"; // p2_meas
+        // p1 - meas
+        out_file_ << (*mp).raw_measurements_(0) << "\t";
+
+        // p2 - meas
+        out_file_ << (*mp).raw_measurements_(1) << "\t";
+      } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
+        // output the estimation in the cartesian coordinates
+        float ro = (*mp).raw_measurements_(0);
+        float phi = (*mp).raw_measurements_(1);
+        out_file_ << ro * cos(phi) << "\t"; // p1_meas
+        out_file_ << ro * sin(phi) << "\t"; // p2_meas
+      }
+
+      // output the ground truth packages
+      out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
+      out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
+      out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
+      out_file_ << gt_pack_list[k].gt_values_(3) << "\t";
+
+      // output the NIS values
+
+      if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
+        out_file_ << ukf.NIS_laser_ << "\n";
+      } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
+        out_file_ << ukf.NIS_radar_ << "\n";
+      }
+
+
+      // convert ukf x vector to cartesian to compare to ground truth
+      VectorXd ukf_x_cartesian_ = VectorXd(4);
+
+      float x_estimate_ = ukf.x_(0);
+      float y_estimate_ = ukf.x_(1);
+      float vx_estimate_ = ukf.x_(2) * cos(ukf.x_(3));
+      float vy_estimate_ = ukf.x_(2) * sin(ukf.x_(3));
+
+      ukf_x_cartesian_ << x_estimate_, y_estimate_, vx_estimate_, vy_estimate_;
+
+      estimations.push_back(ukf_x_cartesian_);
+      ground_truth.push_back(gt_pack_list[k].gt_values_);
     }
-
-    // output the ground truth packages
-    out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(3) << "\t";
-
-    // output the NIS values
-    
-    if ((*mp).sensor_type_ == MeasurementPackage::LASER) {
-      out_file_ << ukf.NIS_laser_ << "\n";
-    } else if ((*mp).sensor_type_ == MeasurementPackage::RADAR) {
-      out_file_ << ukf.NIS_radar_ << "\n";
-    }
-
-
-    // convert ukf x vector to cartesian to compare to ground truth
-    VectorXd ukf_x_cartesian_ = VectorXd(4);
-
-    float x_estimate_ = ukf.x_(0);
-    float y_estimate_ = ukf.x_(1);
-    float vx_estimate_ = ukf.x_(2) * cos(ukf.x_(3));
-    float vy_estimate_ = ukf.x_(2) * sin(ukf.x_(3));
-    
-    ukf_x_cartesian_ << x_estimate_, y_estimate_, vx_estimate_, vy_estimate_;
-    
-    estimations.push_back(ukf_x_cartesian_);
-    ground_truth.push_back(gt_pack_list[k].gt_values_);
-
   }
 
   // compute the accuracy (RMSE)
